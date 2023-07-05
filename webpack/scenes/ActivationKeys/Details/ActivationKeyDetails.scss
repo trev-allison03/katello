@@ -14,7 +14,11 @@
 
 .ak-details-header {
   margin: 0 24px 16px;
-  padding-top: 16px
+  padding-top: 16px;
+}
+
+.ak-details-description {
+  padding-top: 16px;
 }
 
 .breadcrumb-bar-pf4 {
@@ -37,6 +41,7 @@
   white-space: nowrap;
   overflow: hidden;
   display: inline-block;
+  margin-right: 16px
 }
 
 .ak-name-wrapper {

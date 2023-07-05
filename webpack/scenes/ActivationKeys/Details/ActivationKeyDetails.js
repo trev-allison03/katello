@@ -1,12 +1,18 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, {
+  useEffect,
+} from 'react';
 import {
-  Button,
+  useDispatch,
+  useSelector,
+} from 'react-redux';
+import PropTypes from 'prop-types';
+import { propsToCamelCase } from 'foremanReact/common/helpers';
+import { selectAPIResponse } from 'foremanReact/redux/API/APISelectors';
+import {
   Title,
   TextContent,
   Text,
   TextVariants,
-  MenuToggle,
   Breadcrumb,
   BreadcrumbItem,
   Grid,
@@ -18,65 +24,84 @@ import {
   FlexItem,
   Panel,
 } from '@patternfly/react-core';
-import EllipsisVIcon from '@patternfly/react-icons/dist/esm/icons/ellipsis-v-icon';
 import './ActivationKeyDetails.scss';
+import EditModal from './components/EditModal';
+import DeleteMenu from './components/DeleteMenu';
+import { getActivationKey } from './ActivationKeyActions';
+import DeleteModal from './components/DeleteModal';
 
 
-const edit = () => <div>Edit</div>;
-const kebab = () => <div>Kebab</div>;
+const ActivationKeyDetails = ({ match }) => {
+  const dispatch = useDispatch();
+  const akId = match?.params?.id;
+  const akDetailsResponse = useSelector(state => selectAPIResponse(state, `ACTIVATION_KEY_${akId}`));
+  const akDetails = propsToCamelCase(akDetailsResponse);
+  useEffect(() => {
+    if (akId) { // TODO add back akNotLoaded condition
+      dispatch(getActivationKey({ akId }));
+    }
+  }, [akId, dispatch]);
 
-const ActivationKeyDetails = ({ match }) => (
-  <div >
-    <Panel className="ak-details-header">
-      <div className="breadcrumb-bar-pf4">
-        <Breadcrumb ouiaId="ak-breadcrumbs" className="breadcrumb-display">
-          <BreadcrumbItem className="breadcrumb-list" to="/activation_keys">Activation keys</BreadcrumbItem>
-          <BreadcrumbItem to="#" isActive>
-            Activation Key Details {match?.params?.id}
-          </BreadcrumbItem>
-        </Breadcrumb>
-      </div>
-      <Grid>
-        <GridItem span={8} className="ak-name-wrapper">
-          <Title ouiaId="ak-title" headingLevel="h5" size="2xl" className="ak-name-truncate">
-            Activation Key Details {match?.params?.id}
-          </Title>
-          <Split hasGutter style={{ display: 'inline-flex' }}>
-            <SplitItem>
-              <Label>
-                59/Unlimited
-              </Label>
-            </SplitItem>
-          </Split>
-        </GridItem>
-        <GridItem offset={8} span={4}>
-          <Flex>
-            <FlexItem align={{ default: 'align-right' }}>
-              <Split>
-                <SplitItem>
-                  <Button ouiaId="ak-edit-button" variant="secondary" onClick={edit}>
-                    Edit
-                  </Button>
-                </SplitItem>
-                <MenuToggle variant="plain" aria-label="plain kebab" onClick={kebab}>
-                  <EllipsisVIcon />
-                </MenuToggle>
-              </Split>
-            </FlexItem>
-          </Flex>
-        </GridItem>
-      </Grid>
-      <div style={{ clear: 'both' }}>
-        <br />
-        <TextContent>
-          <Text ouiaId="ak-description" component={TextVariants.p}>
-            Activation Key Description
-          </Text>
-        </TextContent>
-      </div>
-    </Panel>
-  </div>
-);
+  const [isModalOpen, setModalOpen] = React.useState(false);
+  const handleModalToggle = () => {
+    setModalOpen(!isModalOpen);
+  };
+
+  return (
+    <div >
+      <Panel className="ak-details-header">
+        <div className="breadcrumb-bar-pf4">
+          <Breadcrumb ouiaId="ak-breadcrumbs" className="breadcrumb-display">
+            <BreadcrumbItem className="breadcrumb-list" to="/activation_keys">Activation keys</BreadcrumbItem>
+            <BreadcrumbItem to="#" isActive>
+              {akDetails.name}
+            </BreadcrumbItem>
+          </Breadcrumb>
+        </div>
+        <Grid>
+          <GridItem span={8} className="ak-name-wrapper">
+            <Flex justifyContent={{ default: 'jusifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }}>
+              <FlexItem>
+                <Title ouiaId="ak-title" headingLevel="h5" size="2xl" className="ak-name-truncate">
+                  {akDetails.name}
+                </Title>
+              </FlexItem>
+              <FlexItem>
+                <Split hasGutter style={{ display: 'inline-flex' }}>
+                  <SplitItem>
+                    <Label>
+                      {akDetails.usageCount}/{akDetails.unlimitedHosts ? 'Unlimited' : akDetails.maxHosts}
+                    </Label>
+                  </SplitItem>
+                </Split>
+              </FlexItem>
+            </Flex>
+          </GridItem>
+          <GridItem offset={8} span={4}>
+            <Flex>
+              <FlexItem align={{ default: 'align-right' }}>
+                <Split>
+                  <SplitItem>
+                    <EditModal akDetails={akDetails} />
+                  </SplitItem>
+                  <DeleteMenu handleModalToggle={handleModalToggle} />
+                </Split>
+              </FlexItem>
+            </Flex>
+          </GridItem>
+        </Grid>
+        <div className="ak-details-description">
+          <TextContent>
+            <Text ouiaId="ak-description" component={TextVariants.p}>
+              {akDetails.description ? akDetails.description : 'Description empty'}
+            </Text>
+          </TextContent>
+        </div>
+      </Panel>
+      <DeleteModal {...{ isModalOpen, handleModalToggle }} />
+    </div>
+  );
+};
 
 export default ActivationKeyDetails;
 
