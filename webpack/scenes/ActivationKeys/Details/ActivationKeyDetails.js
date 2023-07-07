@@ -1,5 +1,6 @@
 import React, {
   useEffect,
+  useState,
 } from 'react';
 import {
   useDispatch,
@@ -38,11 +39,11 @@ const ActivationKeyDetails = ({ match }) => {
   const akDetails = propsToCamelCase(akDetailsResponse);
   useEffect(() => {
     if (akId) { // TODO add back akNotLoaded condition
-      dispatch(getActivationKey({ akId }));
+      dispatch(getActivationKey(akId));
     }
   }, [akId, dispatch]);
 
-  const [isModalOpen, setModalOpen] = React.useState(false);
+  const [isModalOpen, setModalOpen] = useState(false);
   const handleModalToggle = () => {
     setModalOpen(!isModalOpen);
   };
@@ -82,9 +83,9 @@ const ActivationKeyDetails = ({ match }) => {
               <FlexItem align={{ default: 'align-right' }}>
                 <Split>
                   <SplitItem>
-                    <EditModal akDetails={akDetails} />
+                    <EditModal akDetails={akDetails} akId={akId} />
                   </SplitItem>
-                  <DeleteMenu handleModalToggle={handleModalToggle} />
+                  <DeleteMenu handleModalToggle={handleModalToggle} akId={akId} />
                 </Split>
               </FlexItem>
             </Flex>
@@ -98,7 +99,7 @@ const ActivationKeyDetails = ({ match }) => {
           </TextContent>
         </div>
       </Panel>
-      <DeleteModal {...{ isModalOpen, handleModalToggle }} />
+      <DeleteModal isModalOpen={isModalOpen} handleModalToggle={handleModalToggle} akId={akId} />
     </div>
   );
 };

@@ -2,6 +2,9 @@ import React, {
   useEffect,
   useState,
 } from 'react';
+import {
+  useDispatch,
+} from 'react-redux';
 import PropTypes from 'prop-types';
 import {
   Modal,
@@ -16,44 +19,81 @@ import {
   Stack,
   StackItem,
 } from '@patternfly/react-core';
+import { putActivationKey } from '../ActivationKeyActions';
 
-const EditModal = ({ akDetails }) => {
+const EditModal = ({ akDetails, akId }) => {
+  const dispatch = useDispatch();
+
   const {
-    name, description, usageCount, unlimitedHosts,
+    name, description, maxHosts, unlimitedHosts,
   } = akDetails;
 
   const [nameValue, setNameValue] = useState(name);
   const [descriptionValue, setDescriptionValue] = useState(description);
-  const [usageCountValue, setUsageCountValue] = useState(usageCount);
+  const [maxHostsValue, setMaxHostsValue] = useState(maxHosts);
   const [isUnlimited, setUnlimited] = useState(unlimitedHosts);
 
   useEffect(() => {
     setNameValue(name);
     setDescriptionValue(description);
-    setUsageCountValue(usageCount);
+    setMaxHostsValue(maxHosts);
     setUnlimited(unlimitedHosts);
-  }, [name, description, usageCount, unlimitedHosts]);
+  }, [name, description, maxHosts, unlimitedHosts]);
+
+
   const [isModalOpen, setModalOpen] = useState(false);
+
   const handleModalToggle = () => {
     setModalOpen(!isModalOpen);
   };
+  const handleSave = () => {
+    dispatch(putActivationKey(
+      akId,
+      {
+        name: nameValue,
+        description: descriptionValue,
+        max_hosts: maxHostsValue,
+        unlimited_hosts: isUnlimited,
+      },
+    ));
+    handleModalToggle();
+  };
+
+  const resetModalValues = () => {
+    setNameValue(name);
+    setDescriptionValue(description);
+    setMaxHostsValue(maxHosts);
+    setUnlimited(unlimitedHosts);
+  };
+
+  const handleClose = () => {
+    resetModalValues();
+    handleModalToggle();
+  };
+
   const handleNameInputChange = (value) => {
     setNameValue(value);
   };
   const handleDescriptionInputChange = (value) => {
     setDescriptionValue(value);
   };
+
   const onMinus = () => {
-    const newValue = (usageCount || 0) - 1;
-    setUsageCountValue(newValue);
+    maxHostsValue(oldValue => (oldValue || 0) - 1);
   };
   const onChange = (event) => {
-    const { value } = event.target.value;
-    setUsageCountValue(value === '' ? value : +value);
+    let newValue = (event.target.value === '' ? event.target.value : Math.round(+event.target.value));
+    if (newValue < 0) {
+      newValue = 0;
+    }
+    setMaxHostsValue(newValue);
   };
   const onPlus = () => {
-    const newValue = (usageCount || 0) + 1;
-    setUsageCountValue(newValue);
+    setMaxHostsValue(oldValue => (oldValue || 0) + 1);
+  };
+
+  const handleCheckBox = () => {
+    setUnlimited(prevUnlimited => !prevUnlimited);
   };
 
   return (
@@ -67,12 +107,12 @@ const EditModal = ({ akDetails }) => {
         title="Edit activation key"
         description={`Select attributes for ${akDetails.name}`}
         isOpen={isModalOpen}
-        onClose={handleModalToggle}
+        onClose={handleClose}
         actions={[
-          <Button ouiaId="edit-modal-save-button" key="create" variant="primary" form="modal-with-form-form" onClick={handleModalToggle}>
+          <Button ouiaId="edit-modal-save-button" key="create" variant="primary" form="modal-with-form-form" onClick={handleSave}>
             Save
           </Button>,
-          <Button ouiaId="cancel-button" key="cancel" variant="link" onClick={handleModalToggle}>
+          <Button ouiaId="cancel-button" key="cancel" variant="link" onClick={handleClose}>
             Cancel
           </Button>,
         ]}
@@ -94,7 +134,19 @@ const EditModal = ({ akDetails }) => {
           >
             <Stack hasGutter>
               <StackItem>
-                <NumberInput value={usageCountValue} onMinus={onMinus} onChange={onChange} onPlus={onPlus} inputName="input" inputAriaLabel="number input" minusBtnAriaLabel="minus" plusBtnAriaLabel="plus" allowEmptyInput />
+                <NumberInput
+                  value={maxHostsValue}
+                  min={0}
+                  onMinus={onMinus}
+                  onChange={onChange}
+                  onPlus={onPlus}
+                  inputName="input"
+                  inputAriaLabel="number input"
+                  minusBtnAriaLabel="minus"
+                  plusBtnAriaLabel="plus"
+                  isDisabled={isUnlimited}
+                  allowEmptyInput
+                />
               </StackItem>
               <StackItem>
                 <Checkbox
@@ -102,6 +154,7 @@ const EditModal = ({ akDetails }) => {
                   id="unlimited-checkbox"
                   label="Unlimited"
                   isChecked={isUnlimited}
+                  onChange={handleCheckBox}
                 />
               </StackItem>
             </Stack>
@@ -112,7 +165,7 @@ const EditModal = ({ akDetails }) => {
             <TextArea
               id="ak-description"
               type="text"
-              defaultValue="Description empty"
+              defaultValue={descriptionValue || 'Description empty'}
               value={descriptionValue}
               onChange={handleDescriptionInputChange}
             />
@@ -128,12 +181,14 @@ export default EditModal;
 EditModal.propTypes = {
   akDetails: PropTypes.shape({
     name: PropTypes.string,
-    usageCount: PropTypes.number,
+    maxHosts: PropTypes.number,
     description: PropTypes.string,
     unlimitedHosts: PropTypes.bool,
   }),
+  akId: PropTypes.string,
 };
 
 EditModal.defaultProps = {
   akDetails: {},
+  akId: '',
 };
